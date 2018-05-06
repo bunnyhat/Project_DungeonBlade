@@ -5,19 +5,25 @@ using UnityEngine;
 public class SoulsLikeCharacterController : MonoBehaviour {
     /* I'll get around to working this out to what is needed when there is actually a reason too, 
      * I just copied it from an old project. Ignore it for now, I'll fix it myself */
+     /* add slow down when rotating later, just steal it off the third person script */
+     [SerializeField]
     float moveSpeed;
-    Vector3 moveDirection;
+   
     [SerializeField]
     Animator anim;
     [SerializeField]
     CharacterController player;
-	// Use this for initialization
-	void Start () {
+    Vector3 moveDirection;
+    public bool lockedOnTarget = false; //if locked on target, we no longer rotate when the camera turns. 
+    public Transform lockOnTarget;
+    // Use this for initialization
+    void Start () {
 		
 	}
 	
 	// Update is called once per frame
 	void Update () {
+        moveDirection = Vector3.zero;
         Vector3 forward = Camera.main.transform.TransformDirection(Vector3.forward);
         forward.y = 0;
         forward = forward.normalized;
@@ -28,8 +34,8 @@ public class SoulsLikeCharacterController : MonoBehaviour {
         float h = Input.GetAxisRaw("Horizontal");
         Vector3 targetDirection = h * right + v * forward;
 
-        float targetSpeed = Mathf.Min(targetDirection.magnitude, 1.0f);
-        moveSpeed = Mathf.Lerp(moveSpeed, targetSpeed, 0.4f);
+       // float targetSpeed = Mathf.Min(targetDirection.magnitude, 1.0f);
+        //moveSpeed = Mathf.Lerp(moveSpeed, targetSpeed, 0.4f);
         // Debug.Log(targetSpeed);
         if (targetDirection != Vector3.zero)
         {
@@ -42,7 +48,14 @@ public class SoulsLikeCharacterController : MonoBehaviour {
         Vector3 movement = moveDirection * moveSpeed;
         if (movement != Vector3.zero)
         {
-            transform.rotation = Quaternion.LookRotation(moveDirection);
+            if (!lockedOnTarget)
+            {
+                transform.rotation = Quaternion.LookRotation(moveDirection);
+            }
+            else {
+                //if locked, just face the target.
+                transform.LookAt(lockOnTarget);
+            }
             // Do the rotation here
         }
 
@@ -56,15 +69,7 @@ public class SoulsLikeCharacterController : MonoBehaviour {
         {
             anim.SetBool("walk", false);
         }
-        player.Move(movement * 33 + new Vector3(0, -3, 0));
-        /*
-
-                rayCastCheck -= Time.deltaTime;
-                if (rayCastCheck < 0)
-                {
-                    //   Debug.Log("tool tip check");
-                    rayCastCheck = rayCastMax;
-                    checkToolTip();
-                }*/
+        player.Move(movement * moveSpeed);
+  
     }
 }

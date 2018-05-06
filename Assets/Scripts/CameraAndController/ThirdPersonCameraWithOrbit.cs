@@ -18,7 +18,6 @@ public class ThirdPersonCameraWithOrbit : MonoBehaviour {
     float y = 0.0f;
     public float minYClamp = 30; //70  has least flight errors
     public float maxYClamp = 180;
-
     // Use this for initialization
     void Start () {
         cameraTransform = GetComponent<Transform>();
@@ -26,29 +25,12 @@ public class ThirdPersonCameraWithOrbit : MonoBehaviour {
 	
 	// Update is called once per frame
 	void LateUpdate () {
-        //  calculate if player moved
-    /*    if (player.position != oldPlayerPos)
-        {
-            oldPlayerPos = player.position;
-            reOrientCamera = true;
-        }
-        else {
-            reOrientCamera = false;
-        }
-        */
-      /*  if (false) // if player moving
-        {
-            Debug.Log("Reorienting Camera Behind player");
-            cameraTransform.LookAt(player);
-            //cameraTransform.position = (cameraTransform.position - player.transform.position).normalized * 15;
-          //    cameraTransform.position = Vector3.Lerp(cameraTransform.position, idealPosition.position, 0.04f);
-            cameraTransform.position = idealPosition.position;
-        }*/
-        
+
+
         //distance and speed
         x += Input.GetAxis("Mouse X") * 15 * 1 * 1f;
         y -= Input.GetAxis("Mouse Y") * 15 *1f;
-
+        /*There is probably some more interpolated version this should use */
         y = ClampAngle(y, minYClamp, maxYClamp);
         cameraTransform.LookAt(player);
         Quaternion rotation = Quaternion.Euler(y, x, 0);
