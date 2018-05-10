@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MeleeDetection : MonoBehaviour
 {
+    //will add bool to change behavouir for when the player uses it if needed. 
     public List<IDamageable> melee = new List<IDamageable>();
     // Use this for initialization
     void Start()

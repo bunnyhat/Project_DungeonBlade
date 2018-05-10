@@ -8,6 +8,7 @@ using UnityEngine.AI;
 public class AIEntity : MonoBehaviour, IDamageable {
     public int health = 50;
     public int maxHealth = 50;
+    public bool canBeLockedOnTo = true;
     public NavMeshAgent nav;
     public enum AIStates { Chase, Idle, Attack }
     public AIStates state = AIStates.Idle;
@@ -60,10 +61,25 @@ public class AIEntity : MonoBehaviour, IDamageable {
             state = AIStates.Idle;
         }
     }
-
-
     public GameObject getGameObject()
     {
         throw new System.NotImplementedException();
+    }
+
+    void OnBecameVisible()
+    {
+        if (canBeLockedOnTo) {
+            GameObject.FindGameObjectWithTag("Player").
+                GetComponent<SoulsLikeCharacterController>().lockableEnemies.Add(gameObject);
+        }
+        
+    }
+    void OnBecameInvisible()
+    {
+        if (canBeLockedOnTo)
+        {
+            GameObject.FindGameObjectWithTag("Player").
+             GetComponent<SoulsLikeCharacterController>().lockableEnemies.Remove(gameObject);
+        }
     }
 }

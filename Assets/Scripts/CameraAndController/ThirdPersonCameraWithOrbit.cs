@@ -13,11 +13,12 @@ public class ThirdPersonCameraWithOrbit : MonoBehaviour {
     [Header("Movement variables")]
     [Space(22)]
     [SerializeField]
-    private float distance = 25f;
-    float x = 0.0f;
-    float y = 0.0f;
+    public float distance = 25f;
+   public float x = 0.0f;
+    public float y = 0.0f;
     public float minYClamp = 30; //70  has least flight errors
     public float maxYClamp = 180;
+    public Vector3 startingPos = Vector3.zero;
     // Use this for initialization
     void Start () {
         cameraTransform = GetComponent<Transform>();
@@ -26,21 +27,26 @@ public class ThirdPersonCameraWithOrbit : MonoBehaviour {
 	// Update is called once per frame
 	void LateUpdate () {
 
-
+        
         //distance and speed
-        x += Input.GetAxis("Mouse X") * 15 * 1 * 1f;
-        y -= Input.GetAxis("Mouse Y") * 15 *1f;
-        /*There is probably some more interpolated version this should use */
+        x += Input.GetAxis("Mouse X") ;
+        y -= Input.GetAxis("Mouse Y") ;
+     
         y = ClampAngle(y, minYClamp, maxYClamp);
         cameraTransform.LookAt(player);
-        Quaternion rotation = Quaternion.Euler(y, x, 0);
-          //Quaternion rotation = Quaternion.Euler(y, x, 0);
+        Quaternion rotation = Quaternion.Euler(  y,  x, 0);
           cameraTransform.rotation = rotation;
-        distance+= -Input.GetAxis("Mouse ScrollWheel") * 2;
+         distance+= -Input.GetAxis("Mouse ScrollWheel") * 2;
+    
+     
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-        Vector3 position = rotation * negDistance + player.position;
+        Vector3 position = rotation * negDistance + player.position ;
+        // cameraTransform.rotation = rotation;
         cameraTransform.rotation = rotation;
         cameraTransform.position = position;
+        
+        //cameraTransform.LookAt(player);
+        //cameraTransform.position = idealPosition.position;
     }
 
 
@@ -53,6 +59,12 @@ public class ThirdPersonCameraWithOrbit : MonoBehaviour {
         if (angle > 360F)
             angle -= 360F;
         return Mathf.Clamp(angle, min, max);
+    }
+
+    public void reset() {
+        x = 0;
+        y = 0;
+
     }
 }
 
