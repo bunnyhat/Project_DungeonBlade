@@ -4,6 +4,6 @@ using UnityEngine;
 
 public interface IDamageable  {
     string getObjectName();
-    bool takeDamage(int damage);
+    bool takeDamage(DamageInformation damage, GameObject attacker);
     GameObject getGameObject();
 }

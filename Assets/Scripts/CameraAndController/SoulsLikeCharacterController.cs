@@ -4,31 +4,40 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
-     /* add slow down when rotating later, just steal it off the third person script */
-     [SerializeField]
+    /* add slow down when rotating later, just steal it off the third person script */
+    [SerializeField]
+    PlayerUIDisplay UIDisplay;
+    [SerializeField]
+    CharacterController player;
+    [SerializeField]
     float moveSpeed;
     bool IsGrounded = true;
     [SerializeField]
     Animator anim;
-    [SerializeField]
-    MeleeDetection meleeDetection; //used to determine what to attack in melee, shared with AI
-
-    
-    bool isBlocking = false; //gonna have to update damage interface to allow block piercing. 
-
-
-    [SerializeField]
-    CharacterController player;
     Vector3 moveDirection;
+    Vector3 impact= Vector3.zero;
+
+    [Space(5)]
+    [Header("Combat and lockon")]
+    private int health = 50;
+    private int maxHealth = 50;
     public bool lockedOnTarget = false; //if locked on target, we no longer rotate when the camera turns. 
     public Transform lockOnTarget; //what we should rotate around if locked on. 
-
+    [SerializeField]
+    MeleeDetection meleeDetection; //used to determine what to attack in melee, shared with AI
     [SerializeField]
     private CameraLockOnTarget camLock; //the lock on controller. 
+
+    bool isBlocking = false; //gonna have to update damage interface to allow block piercing. 
+    private delegate void ClickEvent();
+    private ClickEvent clickEvent;
     public Transform cameraPosition; //er...nothing?
     /// </summary>
     public List<GameObject> lockableEnemies = new List<GameObject>();
     private int targetLockIndex = 0;
+
+    [Space(5)]
+    [Header("Interaction stuff")]
     //intearction toolip variables. 
     private IInteractable interactionObject;
     private float tooltipTimer = 1f;
@@ -36,16 +45,40 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
     private GameObject crosshair;
     [SerializeField]
     private Text interactionDisplayText;
+
+
+    bool one_click = false;
+    bool timer_running = false;
+    float timer_for_double_click = 0.2f;
+
+    //this is how long in seconds to allow for a double click
+    float delay = 0.3f;
+
     // Use this for initialization
     void Start () {
 		
 	}
 
+    void dodge() {
+        if (lockedOnTarget)
+        {
+            AddImpact(-transform.right);
+        }
+        else {
+            AddImpact(transform.forward);
+        }
+    }
+
     // Update is called once per frame
     //random keys currently to activate things.
     void Update () {
-       //reset movement each frame and check if grounded. 
-       //y is used for jumping so not changed
+        // impact vanishes to zero over time
+        impact = Vector3.Lerp(impact, Vector3.zero, .1f);
+     
+
+
+        //reset movement each frame and check if grounded. 
+        //y is used for jumping so not changed
         moveDirection.x = 0;
         moveDirection.z = 0;
         CheckGroundStatus();
@@ -68,15 +101,17 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
 
         }
         //attack
-        if (Input.GetKeyDown(KeyCode.Mouse1))
+        if (Input.GetKey(KeyCode.Mouse1))
         {
+            anim.SetBool("Attack", true);
             /*Overall, this should be an event tied to the attack animation */
-            foreach (IDamageable g in meleeDetection.melee) {
-                g.takeDamage(15);
-            }
+            attack();
 
         }
-       
+        else {
+            anim.SetBool("Attack", false);
+        }
+
         #region interaction
         if (Input.GetKeyDown(KeyCode.F))
         {
@@ -160,9 +195,9 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
         if (lockedOnTarget) {
             transform.LookAt(lockOnTarget);
         }
-    #endregion
+        #endregion
         #region movement
-      
+     
         Vector3 forward = Camera.main.transform.TransformDirection(Vector3.forward);
         forward.y = 0;
         forward = forward.normalized;
@@ -172,8 +207,10 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
         float v = Input.GetAxisRaw("Vertical");
         float h = Input.GetAxisRaw("Horizontal");
         Vector3 targetDirection = h * right + v * forward;
+        clickEvent = dodge;
+        doubleClick(KeyCode.A, clickEvent);
 
-       // float targetSpeed = Mathf.Min(targetDirection.magnitude, 1.0f);
+        // float targetSpeed = Mathf.Min(targetDirection.magnitude, 1.0f);
         //moveSpeed = Mathf.Lerp(moveSpeed, targetSpeed, 0.4f);
         // Debug.Log(targetSpeed);
         if (targetDirection != Vector3.zero)
@@ -183,13 +220,10 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
             moveDirection = Vector3.RotateTowards(moveDirection, targetDirection, .3f * Mathf.Deg2Rad * Time.deltaTime, 1000);
             moveDirection.y = t;
             moveDirection = moveDirection.normalized;
-            moveDirection.y = t;
+            moveDirection.y = t; //I think I added extra stuff here in my wild error fixing. 
 
         }
-
-     
-        Vector3 movement = moveDirection * moveSpeed;
-      
+        Vector3 movement = moveDirection * moveSpeed;      
         if (movement != Vector3.zero)
         {
            
@@ -226,14 +260,19 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
 
         moveDirection.y -= 2 * Time.deltaTime;
         moveDirection.y = Mathf.Clamp(moveDirection.y, -2, moveDirection.y);
-         
+         movement =  movement + impact;
         player.Move(movement * moveSpeed );
         #endregion
     }
 
-
-
-
+    private void attack()
+    {
+        DamageInformation d = new DamageInformation();
+        foreach (IDamageable g in meleeDetection.melee)
+        {
+            g.takeDamage(d, this.gameObject);
+        }
+    }
 
     void CheckGroundStatus()
     {
@@ -256,22 +295,57 @@ public class SoulsLikeCharacterController : MonoBehaviour,IDamageable {
         
         }
     }
+   
+    void AddImpact(Vector3 force)
+    {
+        Vector3 dir = force.normalized;
+        impact += dir.normalized * 0.1f;
+    }
+
+   private float lastClickTime;
+
+    public float catchTime = 0.25f;
+    private KeyCode lastKey;
+    void doubleClick(KeyCode key, ClickEvent action )
+    {
+
+        if (Input.GetKeyDown(key))
+        {
+          
+            if (Time.time - lastClickTime < catchTime && lastKey == key )
+            {
+                //double click
+                print("Double click");
+                action();
+            }
+            else
+            {
+                //normal click
+                lastKey = key;
+            }
+            lastClickTime = Time.time;
+        }
+    }
 
 
- 
+
 
     public string getObjectName()
     {
         throw new System.NotImplementedException();
     }
 
-    public bool takeDamage(int damage)
+    public bool takeDamage(DamageInformation damage, GameObject attacker)
     {
+        Vector3 direction = (transform.position - attacker.transform.position);
+     //   AddImpact(direction  * 0.1f);
         if (isBlocking) {
             return false;
         }
-
-        throw new System.NotImplementedException();
+        health -= damage.damage;
+        UIDisplay.updateHealth(health, maxHealth);
+        UIDisplay.flickerScreen();
+        return true;
     }
 
     public GameObject getGameObject()

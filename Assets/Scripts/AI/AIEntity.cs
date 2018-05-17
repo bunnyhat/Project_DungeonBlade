@@ -18,12 +18,14 @@ public class AIEntity : MonoBehaviour, IDamageable {
 
     public float attackTimer = 1f;
     public float attackTimerMax = 1f;
+    [SerializeField]
+    DamageInformation meleeAttackInformation = new DamageInformation();
     public string getObjectName()
     {
         return this.name;
     }
 
-    public bool takeDamage(int damage)
+    public bool takeDamage(DamageInformation damage, GameObject attacker)
     {
         gameObject.SetActive(false);
         return true;
@@ -83,3 +85,8 @@ public class AIEntity : MonoBehaviour, IDamageable {
         }
     }
 }
+[System.Serializable]
+public struct DamageInformation{
+    //a struct to monitor things like armour piercing attacks or any additional effects. 
+    public int damage;
+    }

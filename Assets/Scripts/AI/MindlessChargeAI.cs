@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class MindlessChargeAI : AIEntity {
-
+    [SerializeField]
+    private List<GameObject> wayPoints = new List<GameObject>();
 	// Use this for initialization
 	void Start () {
 		
@@ -15,15 +16,8 @@ public class MindlessChargeAI : AIEntity {
         switch (state)
         {
             case AIStates.Idle:
-                //whether to dile or walk somewhere
-                /*        if (hasDest)
-                        {
-                            anim.SetBool("walk", true);
-                        }
-                        else
-                        {
-                            anim.SetBool("walk", false);
-                        }*/
+                nav.SetDestination(wayPoints
+                    [0].transform.position);
                 break;
             case AIStates.Attack:
                 nav.Stop();
@@ -40,8 +34,8 @@ public class MindlessChargeAI : AIEntity {
                     attackTimer = attackTimerMax;
                     foreach (IDamageable g in meleeDetection.melee)
                     {
-
-                        g.takeDamage(5);
+                        DamageInformation d = new DamageInformation();
+                        g.takeDamage(d, gameObject);
                         if (!g.getGameObject().activeSelf)
                         {
                             meleeDetection.melee.Remove(g);
